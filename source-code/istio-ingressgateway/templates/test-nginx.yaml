@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-{{ .Values.gateway.name }}
+  namespace: {{ .Values.coreNamespace }}
+spec:
+  selector:
+    matchLabels:
+      app: nginx-{{ .Values.gateway.name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx-{{ .Values.gateway.name }}
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-{{ .Values.gateway.name }}
+  namespace: {{ .Values.coreNamespace }}
+  labels:
+    app: nginx-{{ .Values.gateway.name }}
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-{{ .Values.gateway.name }}
+  type: ClusterIP
+---
+
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: nginx-{{ .Values.gateway.name }}
+  namespace: {{ .Values.coreNamespace }}
+spec:
+  gateways:
+  - {{ .Values.coreGateway.name }}
+  hosts:
+  - "*"
+  http:
+  - route:
+    - destination:
+        host: nginx-{{ .Values.gateway.name }}
+        port:
+          number: 80

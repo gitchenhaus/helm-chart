@@ -1,0 +1,94 @@
+# Default values for domain-service-account.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+deployment:
+    name: temp-ds-sb-rexbet-com
+    image:
+        repo: team.sb.rexbet.com:8082/domain-service-temp
+        tag: latest
+    nodeSelector: {}
+    imagePullSecrets:
+    # - name: nexus-regcred
+    replicaCount: 1
+    envs:
+    # - COMPlus_ThreadPool_ForceMinWorkerThreads: 19
+    # - JAEGER_SERVICE_NAME: Temp-Dev
+    # - JAEGER_AGENT_HOST: jaeger-agent.monitor.svc.cluster.local
+    # - JAEGER_AGENT_PORT: 6831
+    # - JAEGER_SAMPLER_TYPE: const
+    # - JAEGER_REPORTER_MAX_QUEUE_SIZE: 200
+    # - JAEGER_REPORTER_FLUSH_INTERVAL: 1s
+    hostAliases:
+        # ip: "192.168.1.114"
+        # hostnames:
+        # - "gameconsoleapi.dev.orochi.com"
+    resource:   
+        # requests:
+        #     memory: 128Mi
+        #     cpu: 100m
+        # limits:
+        #     memory: 800Mi
+        #     cpu: 500m
+    kernel:
+    # default gke kernal setting
+    # - net.ipv4.tcp_max_tw_buckets: '131072'
+    # - net.ipv4.tcp_keepalive_time: '300'
+    # - net.ipv4.tcp_keepalive_probes: '5'
+    # - net.ipv4.tcp_keepalive_intvl: '60'
+    # - net.ipv4.tcp_tw_reuse: '0'
+    # - net.ipv4.tcp_syncookies: '1'
+    # - net.ipv4.tcp_max_syn_backlog: '2048'
+    # - net.ipv4.tcp_synack_retries: '5'
+    # - net.ipv4.tcp_fin_timeout: '60'
+    # - net.ipv4.tcp_timestamps: '1'
+    # - net.ipv4.tcp_window_scaling: '1'
+    # - net.ipv4.tcp_syn_retries: '6'
+    # - net.ipv4.tcp_sack: '1'
+    # - net.netfilter.nf_conntrack_tcp_timeout_established: '86400'
+    # - net.ipv4.tcp_no_metrics_save: '0'
+    # - net.core.somaxconn: '1024'
+    # - net.ipv4.tcp_fastopen: '1'
+    persistentEnable: true
+## Below setting on "persistentEnable : true" 
+    volumes:
+    - name: log
+      persistentVolumeClaim:
+        claimName: dev-pv-claim
+    volumeMounts:
+    - name: log
+      mountPath: /tmp/logs
+      subPathExpr: TMP/$(POD_NAME)
+
+    healthCheckEnable: false
+## Below setting on "healthCheckEnable : true" 
+    livenessProbe:
+        initialDelaySeconds: ""
+        periodSeconds: ""
+        failureThreshold: ""
+        timeoutSeconds: ""
+    readinessProbe:
+        initialDelaySeconds: ""
+        periodSeconds: ""
+        failureThreshold: ""
+        timeoutSeconds: ""
+    startupProbe:
+        initialDelaySeconds: ""
+        periodSeconds: ""
+        failureThreshold: ""
+        timeoutSeconds: ""
+
+istio:
+    enable: false
+## Below setting on "istio.enable : true" 
+    loadbalancerMode: ROUND_ROBIN
+    originalHost: ""
+    originalDomains: {}
+    maintenanceAllowHost: ""
+    maintenanceAllowDomain: {}
+    gateway: ""
+    allowHeaders: {}
+
+service:
+    serviceType: ClusterIP
+    containerPort: 80
+    nodePort:

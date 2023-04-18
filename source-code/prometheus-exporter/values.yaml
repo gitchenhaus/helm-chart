@@ -1,0 +1,3 @@
+exporter:
+    namespace: monitor
+    services:

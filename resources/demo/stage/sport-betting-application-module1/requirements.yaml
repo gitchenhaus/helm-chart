@@ -1,0 +1,9 @@
+dependencies:
+  - name: application-product-report-aggregator
+    version: 0.1.2
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: application-betengine
+    version: 0.1.1
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+
+

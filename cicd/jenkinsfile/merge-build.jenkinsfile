@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+    options {
+        gitLabConnection('Gitlab-Skyline')
+        buildDiscarder(logRotator("daysToKeepStr":"5","numToKeepStr": "6","artifactDaysToKeepStr":"-1", "artifactNumToKeepStr": "-1"))
+    }
+    triggers {
+        gitlab(
+            triggerOnPush: false,
+            triggerToBranchDeleteRequest: false,
+            triggerOnMergeRequest: true,
+            triggerOnlyIfNewCommitsPushed: false,
+            triggerOnPipelineEvent: false,
+            triggerOnAcceptedMergeRequest: false,
+            triggerOnClosedMergeRequest: false,
+            triggerOnApprovedMergeRequest: false,
+            triggerOpenMergeRequestOnPush: "source",
+            triggerOnNoteRequest: true,
+            noteRegex: ".*[Jj]enkins [Rr]ebuild.*",
+            skipWorkInProgressMergeRequest: true,
+            ciSkip: true,
+            setBuildDescription: true,
+            addNoteOnMergeRequest: true,
+            addCiMessage: true,
+            addVoteOnMergeRequest: true,
+            acceptMergeRequestOnSuccess: false,
+            branchFilterType: "All",
+            cancelPendingBuildsOnUpdate: false,
+            secretToken: "a3c1e934357b50b7153958470a8bfcc6"
+        )
+    }
+    stages {
+        stage('Merge Build') {
+            steps {
+                withKubeConfig([credentialsId: "k8s-dev"]) {
+                    sh('./cicd/scripts/helm-validation.sh')
+                }
+            }
+        }
+    }
+    post{
+        always {
+            cleanWs(
+                cleanWhenNotBuilt: true,
+                deleteDirs: true,
+                disableDeferredWipeout: true,
+                notFailBuild: true
+            )
+        }
+        success {
+            updateGitlabCommitStatus(name: 'jenkins', state: 'success')
+            addGitLabMRComment (comment: ":white_check_mark: Jenkins Build SUCCESS , Results available at: [[Jenkins ${JOB_NAME} ${BUILD_DISPLAY_NAME}]](${BUILD_URL})")            
+        }
+        failure {
+            updateGitlabCommitStatus(name: 'jenkins', state: 'failed')
+            addGitLabMRComment (comment: ":x: Jenkins Build FAILURE , Results available at: [[Jenkins ${JOB_NAME} ${BUILD_DISPLAY_NAME}]](${BUILD_URL})")            
+        }
+        unstable {
+            updateGitlabCommitStatus(name: 'jenkins', state: 'failed')
+            addGitLabMRComment (comment: ":point_up: Jenkins Build UNSTABLE , Results available at: [[Jenkins ${JOB_NAME} ${BUILD_DISPLAY_NAME}]](${BUILD_URL})")                       
+        }
+        aborted {
+            updateGitlabCommitStatus(name: 'jenkins', state: 'failed')
+            addGitLabMRComment (comment: ":point_up: Jenkins Build ABORTED , Results available at: [[Jenkins ${JOB_NAME} ${BUILD_DISPLAY_NAME}]](${BUILD_URL})")                       
+        }
+    }
+}

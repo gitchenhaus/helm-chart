@@ -1,0 +1,39 @@
+{{- $pvcs := .Values.pvcs -}}
+################################
+{{- range $pvc :=$pvcs}}
+
+{{- $pvcName := $pvc.name -}}
+{{- $storageClassName := $pvc.storageClassName -}}
+{{- $accessMode := $pvc.accessMode -}}
+{{- $diskSize := $pvc.diskSize -}}
+{{- $nfsIP := $pvc.nfsIP -}}
+{{- $nfsPath := $pvc.nfsPath -}}
+
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $pvcName }}
+spec:
+  storageClassName: {{ $storageClassName }}
+  accessModes:
+  - {{ $accessMode }}
+  resources:
+    requests:
+      storage: {{ $diskSize }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $pvcName }}
+spec:
+  capacity:
+    storage: {{ $diskSize }}
+  accessModes:
+    - {{ $accessMode }}
+  nfs:
+    server: {{ $nfsIP }}
+    path: {{ $nfsPath }}
+---
+{{- end}}

@@ -1,0 +1,37 @@
+deployment:
+  name: consul-sb-rexbet-com
+  image:
+    repo: team.sb.rexbet.com:8083/application-config-consul
+  pvcName: app-pv-claim
+  logPathName: config
+  subPathEnable: false
+  mountPath: /overwrite
+  volumeName: config
+  nodeSelector:
+    application: enable
+  replicaCount: 1
+  envs:
+  - NAMESPACE: RexBet
+  - ENV: Development
+  resource:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 128Mi
+      cpu: 100m
+  volumes:
+  - name: config
+    persistentVolumeClaim:
+      claimName: dev-pv-claim
+  volumeMounts:
+  - name: config
+    mountPath: /overwrite
+
+
+service:
+  serviceType: ClusterIP
+  containerPort: 8500
+
+istio:
+  loadbalancerMode: ROUND_ROBIN

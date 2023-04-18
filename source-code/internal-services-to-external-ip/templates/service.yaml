@@ -1,0 +1,36 @@
+###############[ Global Variable ]###############
+{{- $namespace := .Values.internal.namespace -}}
+
+{{- range $serviceInfo :=.Values.internal.services}}
+  ###############[ Service Variable ]###############
+  {{- $externalNames := $serviceInfo.externalNames -}}
+  {{- $name := $serviceInfo.name -}}
+  {{- $ports := $serviceInfo.ports -}}
+  {{- $portName := $serviceInfo.portName -}}
+  {{- $isMutipleExternalSvc := gt (len $externalNames) 1 -}}
+
+{{- range $nIndex, $externalName :=$externalNames }}
+  # if count of externalSvc > 1 , svcName suffix add index
+  {{- if $isMutipleExternalSvc -}}
+    {{ $name = printf "%s-%s" $serviceInfo.name ($nIndex|toString) }}
+  {{- end }}
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{$namespace}}
+spec:
+  ports: 
+  {{- range $pIndex,$port := $ports }}
+  - name: {{ printf "%s-%s" $portName ($pIndex|toString) }}
+    port: {{ $port }}
+    targetPort: {{ $port }}
+  {{- end}}
+  type: ExternalName
+  externalName: {{ $externalName }}
+---
+{{- end}}
+
+
+{{- end}}

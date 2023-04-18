@@ -1,0 +1,29 @@
+dependencies:
+  - name: domain-service-account-repository
+    version: 0.1.2
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-betting-repository
+    version: 0.1.4
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-gaming-repository 
+    version: 0.1.3
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-infrastructure-repository
+    version: 0.1.5
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-reporting-repository
+    version: 0.1.2
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-trading-repository
+    version: 0.1.2
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: application-game-aggregator-repository
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: application-betengine-repository
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: share-cron-redis
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+

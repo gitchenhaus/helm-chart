@@ -1,0 +1,107 @@
+{{- $externalInstances := .Values.externalInstances -}}
+################################
+{{- range $externalInstance :=$externalInstances}}
+
+{{- $name := $externalInstance.name -}}
+{{- $namespace := $externalInstance.namespace -}}
+{{- $ports := $externalInstance.ports -}}
+{{- $firstTargetPort := (first $externalInstance.ports) -}}
+{{- $targetPortCount := len $firstTargetPort.targetPorts -}}
+{{- $externalIps := $externalInstance.externalIps -}}
+{{- $externalIpCount := len $externalInstance.externalIps -}}
+{{- $index := 0 -}}
+
+{{ if gt $targetPortCount 1 }}
+{{- range $index, $targetPort := $firstTargetPort.targetPorts }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-{{ $index }}
+  namespace: {{ $namespace }}
+spec:
+  ports:  
+  {{- range $port :=$ports}}
+  - name: {{ $port.portName }}
+    port: {{ $port.port }}
+    targetPort: {{ $targetPort }}
+  {{- end}}
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: {{ $name }}-{{ $index }}
+  namespace: {{ $namespace }}
+subsets:
+  - addresses:
+    - ip: {{ (first $externalIps) }}
+    ports:
+    {{- range $port :=$ports}}
+    - name: {{ $port.portName }}
+      port: {{ $targetPort }}
+    {{- end}}
+{{- end}}
+
+{{- else if gt $externalIpCount 1}}
+{{- range $index, $ip := $externalIps }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-{{ $index }}
+  namespace: {{ $namespace }}
+spec:
+  ports:  
+  {{- range $port :=$ports}}
+  - name: {{ $port.portName }}
+    port: {{ $port.port }}
+    targetPort: {{ (first $port.targetPorts) }}
+  {{- end}}
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: {{ $name }}-{{ $index }}
+  namespace: {{ $namespace }}
+subsets:
+  - addresses:
+    - ip: {{ $ip }}
+    ports:
+    {{- range $port :=$ports}}
+    - name: {{ $port.portName }}
+      port: {{ (first $port.targetPorts) }}
+    {{- end}}
+{{- end}}
+{{- else}}
+{{- range $index, $ip := $externalIps }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+spec:
+  ports:
+  {{- range $port :=$ports}}
+  - name: {{ $port.portName }}
+    port: {{ $port.port }}
+    targetPort: {{ (first $port.targetPorts) }}
+  {{- end}}
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: {{ $name }}
+  namespace: {{ $namespace }}
+subsets:
+  - addresses:
+    - ip: {{ $ip }}
+    ports:
+    {{- range $port :=$ports}}
+    - name: {{ $port.portName }}
+      port: {{ (first $port.targetPorts) }}
+    {{- end}}
+{{- end}}
+
+{{- end}}
+{{- end}}

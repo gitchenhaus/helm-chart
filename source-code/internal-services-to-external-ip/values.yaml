@@ -1,0 +1,117 @@
+internal:
+    namespace: sport-betting
+    services:
+        -  name: accounts-db-sb-rexbet-com
+           portName: mysql
+           ports: 
+                - 3306
+           externalNames: 
+                - mariadb-external-instance.mariadb.svc.cluster.local
+
+        -   name: accounts-redis-sb-rexbet-com
+            portName: redis
+            ports: 
+                - 6379
+            externalNames: 
+                - placebet-redis-master-instance.redis.svc.cluster.local
+                - placebet-redis-slave-instance.redis.svc.cluster.local
+
+        -   name: gaming-db-sb-rexbet-com
+            portName: mysql
+            ports:
+                - 3306
+            externalNames: 
+                - mariadb-external-instance.mariadb.svc.cluster.local
+        
+        -   name: gaming-redis-sb-rexbet-com
+            portName: redis
+            ports:
+                - 6379
+            externalNames: 
+                - gaming-redis-master-instance.redis.svc.cluster.local
+                - gaming-redis-slave-instance.redis.svc.cluster.local
+        
+        -   name: infrastructure-db-sb-rexbet-com
+            portName: mysql
+            ports: 
+                - 3306
+            externalNames: 
+                - mariadb-external-instance.mariadb.svc.cluster.local
+        
+        -   name: infrastructure-redis-sb-rexbet-com
+            portName: redis
+            ports:
+                - 6379
+            externalNames: 
+                - global-redis-master-instance.redis.svc.cluster.local
+                - global-redis-slave-instance.redis.svc.cluster.local
+        
+        -   name: trading-db-sb-rexbet-com
+            portName: mysql
+            ports: 
+                - 3306
+            externalNames: 
+                - mariadb-external-instance.mariadb.svc.cluster.local
+        
+        -   name: trading-redis-sb-rexbet-com
+            portName: redis
+            ports:
+                - 6379
+            externalNames: 
+                - global-redis-master-instance.redis.svc.cluster.local
+                - global-redis-slave-instance.redis.svc.cluster.local
+        
+        -   name: reporting-redis-sb-rexbet-com
+            portName: redis
+            ports: 
+                - 6379
+            externalNames: 
+                - reporting-redis-master-instance.redis.svc.cluster.local
+                - reporting-redis-slave-instance.redis.svc.cluster.local
+        
+        -   name: reporting-influxdb-sb-rexbet-com
+            portName: tcp
+            ports: 
+                - 8086
+            externalNames: 
+                - influxdb-external-instance.influxdb.svc.cluster.local
+        
+        -   name: betengine-redis-sb-rexbet-com
+            portName: redis
+            ports: 
+                - 6379
+            externalNames: 
+                - placebet-redis-master-instance.redis.svc.cluster.local
+                - placebet-redis-slave-instance.redis.svc.cluster.local
+        
+        -   name: cron-sb-rexbet-com
+            portName: redis
+            ports: 
+                - 6379
+            externalNames: 
+                - global-redis-master-instance.redis.svc.cluster.local
+                - global-redis-slave-instance.redis.svc.cluster.local
+        
+        -   name: gameaggregator-redis-sb-rexbet-com
+            portName: redis
+            ports: 
+                - 6379
+            externalNames: 
+                - gaming-redis-master-instance.redis.svc.cluster.local
+                - gaming-redis-slave-instance.redis.svc.cluster.local
+        
+        -   name: kafka-sb-rexbet-com
+            portName: tcp
+            ports: 
+                - 9092
+            externalNames: 
+                - kafka-external-instance-0.kafka.svc.cluster.local
+        
+        -   name: mongodb-instance-sb-rexbet-com-0
+            portName: mongo
+            ports: 
+                - 27017
+                - 27027
+                - 27037
+            externalNames: 
+                - mongodb-dev-master-0.mongodb.svc.cluster.local

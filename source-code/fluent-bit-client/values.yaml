@@ -1,0 +1,361 @@
+# Default values for fluent-bit-client
+
+kind: Deployment
+
+replicaCount: 1
+
+image:
+  repository: team.sb.rexbet.com:8083/fluent/fluent-bit
+  tag: "1.9.2"
+  pullPolicy: Always
+
+imagePullSecrets: 
+    - name: nexus-regcred
+
+nameOverride: ""
+fullnameOverride: ""
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+
+readinessProbe:
+  httpGet:
+    path: /api/v1/health
+    port: http
+
+resource: {}
+
+nodeSelector: {}
+
+flush: 5
+metricsPort: 2020
+
+podAnnotations: 
+  sidecar.istio.io/inject: "false"
+
+extraVolumes:
+  - name: log
+    persistentVolumeClaim:
+      claimName: app-pv-claim
+
+extraVolumeMounts: 
+  - mountPath: /tmp/fluentd/
+    name: log
+
+luaScripts:
+  general.lua: |
+    function slowtag(tag, timestamp, record)
+
+        local duration = record["duration"]
+        if duration == nil or duration == '' or duration <1
+        then
+            return 0
+        end
+        
+        local slowtag="SLOW"
+        if duration>= 30 then
+            slowtag="DEATHFUL_SLOW"
+        elseif duration>= 10 then
+            slowtag="DAMN_SLOW"
+        elseif  duration>=5 then
+            slowtag="VERY_SLOW"
+        end
+    
+        local new_record = record
+        new_record["slowtag"] = slowtag
+    
+        return 2, timestamp, new_record
+    end
+
+## https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/configuration-file
+config:
+  service: |
+    [SERVICE]
+        Flush                      5
+        Daemon                     Off
+        storage.path               /tmp/fluentd/{{.Values.fluentbitClient.module}}
+        storage.sync               normal
+        storage.checksum           Off
+        storage.metrics            Off
+        Log_Level                  {{ .Values.logLevel }}
+        Parsers_File               custom_parsers.conf
+        HTTP_Server                On
+        HTTP_Listen                0.0.0.0
+        HTTP_Port                  {{ .Values.metricsPort }}
+        Health_Check               On
+
+  ## https://docs.fluentbit.io/manual/pipeline/inputs
+  inputs: |
+    [INPUT]
+        Name              tail
+        Path              {{.Values.fluentbitClient.path}}
+        Path_Key          logpath
+        storage.type      filesystem
+        DB                {{.Values.fluentbitClient.db}}
+        Mem_Buf_Limit     128MB
+        Read_from_head    true
+        Inotify_Watcher   Off
+        Skip_Long_Lines   On
+        Skip_Empty_Lines  On
+        Ignore_Older      30m
+        Multiline         On
+        Parser_Firstline  rexbet_multiline_match
+        Parser_1          arguments
+        Parser_2          stackTrace
+        Parser_3          duration
+        Parser_4          traceId
+        Parser_5          largeLogId
+        Tag               rexbet.{{.Values.fluentbitClient.module}}
+
+  ## https://docs.fluentbit.io/manual/pipeline/outputs fluent-bit-server fb-server-fluent-bit
+  # storage.total_limit_size  100M
+  outputs: |
+    [OUTPUT]
+        Name            Forward
+        Match           rexbet.*
+        Host            {{.Values.fluentdServer.externalName}}
+        Port            24220
+        Time_as_Integer On
+        Retry_Limit     5
+        Tag             {{.Values.fluentbitClient.env}}.log
+
+  ## https://docs.fluentbit.io/manual/pipeline/filters
+  filters: |
+    [FILTER]
+        Name          parser
+        Match         rexbet.*
+        Key_Name      logpath
+        Parser        container
+        Reserve_Data  On
+        Preserve_Key  On
+
+    # Find in message
+    [FILTER]
+        Name          parser
+        Match         rexbet.*
+        Key_Name      message
+        Parser        responseCode
+        Reserve_Data  On
+        Preserve_Key  On
+
+    # Find in arguments
+    [FILTER]
+        Name          parser
+        Match         rexbet.*
+        Key_Name      arguments
+        Parser        responseCode
+        Reserve_Data  On
+        Preserve_Key  On
+
+    [FILTER]
+        Name          parser
+        Match         rexbet.*
+        Key_Name      arguments
+        Parser        count
+        Reserve_Data  On
+        Preserve_Key  On
+
+    #PartnerAPI, GameConsoleApi
+    [FILTER]
+        Name          parser
+        Match_Regex   rexbet.*
+        Key_Name      arguments
+        Parser        pg1
+        Reserve_Data  On
+        Preserve_Key  On
+
+    [FILTER]
+        Name          parser
+        Match_Regex   rexbet.*
+        Key_Name      arguments
+        Parser        pg2
+        Reserve_Data  On
+        Preserve_Key  On
+
+    # Accounts, Betting , Infrastructure
+    [FILTER]
+        Name          parser
+        Match_Regex   rexbet.*
+        Key_Name      arguments
+        Parser        abi_1
+        Reserve_Data  On
+        Preserve_Key  On
+
+    # GA, RC, FF, Gaming
+    [FILTER]
+        Name          parser
+        Match_Regex   rexbet.*
+        Key_Name      arguments
+        Parser        gfg_1
+        Reserve_Data  On
+        Preserve_Key  On
+
+    [FILTER]
+        Name          parser
+        Match_Regex   rexbet.*
+        Key_Name      arguments
+        Parser        gfg_2
+        Reserve_Data  On
+        Preserve_Key  On
+
+    # SingleWalletApi
+    [FILTER]
+        Name          parser
+        Match         rexbet.*
+        Key_Name      arguments
+        Parser        swa
+        Reserve_Data  On
+        Preserve_Key  On
+
+    # Find in stackTrace
+    [FILTER]
+        Name          parser
+        Match         rexbet.*
+        Key_Name      stackTrace
+        Parser        errorMessage
+        Reserve_Data  On
+        Preserve_Key  On
+
+    [FILTER]
+        Name          parser
+        Match         rexbet.*
+        Key_Name      stackTrace
+        Parser        responseCode
+        Reserve_Data  On
+        Preserve_Key  On
+
+    # Find in perf (Replace field "perf" with "type")
+    [FILTER]
+        Name      modify
+        Match     rexbet.*
+        Condition Key_exists perf
+        Set       type       Perf
+        Remove    perf
+
+    [FILTER]
+        Name   lua
+        Match  rexbet.*
+        script /fluent-bit/scripts/general.lua
+        call   slowtag
+
+
+  ## https://docs.fluentbit.io/manual/pipeline/parsers
+  customParsers: |
+    [PARSER]
+        Name        rexbet_multiline_match
+        Format      regex
+        Regex       (?<logdate>\d{4}-\d{1,2}-\d{1,2}(T| )\d{2}:\d{2}:\d{2}(.\d+|)) \[(?<thread>[\d]+)\]\[(?<type>[\w]+)\]\[(?<sender>[\w|\.]+)\](\[(?<perf>Perf)\]|)(?<message>[\s\S]*)
+        Time_Key    logdate
+        Time_Format  %Y-%m-%d %H:%M:%S.%L
+        Time_Keep   On
+
+    [PARSER]
+        Name   container
+        Format regex
+        Regex  \/tmp\/fluentd\/(?<module>[\w|.|-]+)\/((?<container>[\w|_|-]+)\/|)
+
+    [PARSER]
+        Name   responseCode
+        Format regex
+        Regex  (?<responseCode>((COMM|ACCT|GAME|REPT|BETT|TRAD|INFR|ITGR|PLAY|REPL|BAOF|SGWT)\d{4}))
+
+    [PARSER]
+        Name   largeLogId
+        Format regex
+        Regex  largeLogId:(?<largeLogId>[\w|-]+)
+
+    [PARSER]
+        Name   traceId
+        Format regex
+        Regex  traceId:(?<traceId>\w+)
+
+    [PARSER]
+        Name   duration
+        Format regex
+        Regex  duration:(?<duration>\d+(\.\d+))
+        Types  duration:float
+
+    [PARSER]
+        Name   stackTrace
+        Format regex
+        Regex  stackTrace:(?<stackTrace>[\S\s]+)
+
+    [PARSER]
+        Name   arguments
+        Format regex
+        Regex  arguments:(?<arguments>[\S\s]+)
+
+    # arguments
+    [PARSER]
+        Name   count
+        Format regex
+        Regex  (^|\|)[C|c]ount:(?<count>\d+)
+        Types  count:integer
+
+
+    # PartnerAPI, GameConsoleAPI
+    [PARSER]
+        Name   pg1
+        Format regex
+        Regex  (opCode:(?<opCode>.*?)(\|| $|$)|)(memberCode:(?<memberCode>\w+?)(\|| $|$)|)(Type:(?<myBetType>\w+?)(\|| $|$)|)(isThrottled:(?<isThrottled>\w+?)(\|| $|$)|)(count:(?<count>\w+?)(\|| $|$)|)(Original Wagers:(?<originalWagers>\d+?)(\|| $|$)|)(Already Exist Wagers:(?<alreadyExistWagers>\d+?)(\|| $|$)|)(Missing Wagers:(?<missingWagers>\d+?)(\|| $|$)|)(Replenish Wagers:(?<replenishWagers>\d+?)(\|| $|$)|)(unSettledCount:(?<unSettledCount>\d+?)(\|| $|$)|)(unSettledInPlayCount:(?<unSettledInPlayCount>\d+?)(\|| $|$)|)(settledCount:(?<settledCount>\d+?)(\|| $|$)|)(xiaoJinWagerNo:(?<xiaoJinWagerNo>\w+?)(\|| $|$)|)(isSettled:(?<isSettled>\w+?)(\|| $|$)|)
+    [PARSER]
+        Name   pg2
+        Format regex
+        Regex  (providerCode:(?<providerCode>.*?)(\|| $|$)|)(providerMarketTypeName:(?<providerMarketTypeName>[\w| ]+)(\|| $|$)|)(childEventTypeId:(?<childEventTypeId>\w+?)(\|| $|$)|)
+
+    # Accounts, Betting , Infrastructure
+    [PARSER]
+        Name   abi_1
+        Format regex
+        Regex  category:(?<catagory>\w+).+?result:(?<result>\d+)
+        Types  result:integer
+
+    # GA, RC, FF, Gaming ,PC-GameAggregator,GameAggregator
+    [PARSER]
+        Name   gfg_1
+        Format regex
+        Regex  (providerMatchId:(?<providerMatchId>\w+?)(\|| $|$)|)(rexBetSportCode:(?<rexBetSportCode>\w+)(\|| $|$)|)(sportCode:(?<sportCode>\w+?)(\|| $|$)|)(LeagueId:(?<LeagueId>\d+?)(\|| $|$)|)(bcRequestType:(?<bcRequestType>\w+)(\|| $|$)|)(delayTime:(?<delayTime>\d+(\.\d+)?)(\|| $|$)|)(vendorDelayTime:(?<vendorDelayTime>\d+(\.\d+)?)(\|| $|$)|)(bcId:(?<bcId>\w+)(\|| $|$)|)(Command:(?<Command>\w+)(\|| $|$)|)
+        Types  delayTime:float vendorDelayTime:float
+    [PARSER]
+        Name   gfg_2
+        Format regex
+        Regex  (url:(?<url>.*?)\||)(opCode:(?<opCode>\w+?)\||)(xiaoJinOpCode:(?<xjOpCode>\w+?)\||)(ip:(?<ip>.*?)(\|| $|$)|)(request\.bytes:(?<request_bytes>\d+?)(\|| $|$)|)(response\.bytes:(?<response_bytes>\d+?)(\|| $|$)|)(response\.status:(?<response_status>\d+?)(\|| $|$)|)(request\.content:(?<request_content>[\S\s]+)(?=\|request)|)(request\.ciphertext:(?<request_ciphertext>.*?)(\|| $|$)|)(response\.content:(?<response_content>[\S\s]+)(?=\|response)|)(response\.ciphertext:(?<response_ciphertext>.*?)(\|| $|$)|)(duration:(?<duration>\d+(\.\d+|))|)(xiaoJinSportId:(?<xiaoJinSportId>\d+(\.\d+|))|)
+        Types  request_bytes:integer response_bytes:integer duration:float
+    
+    # SingleWalletApi
+    [PARSER]
+        Name   swa
+        Format regex
+        Regex  (response\.status:(?<response_status>\d+|)(\|))(duration:(?<duration>\d+(\.\d+|))(\|))(waliEnv:(?<waliEnv>\w+)(\|))(waliPlatform:(?<waliPlatform>\w+)(\|))(waliStatusCode:(?<waliStatusCode>\d+|)(\|))(waliRequestId:(?<waliRequestId>\d+)(\|)|)(wagerNo:(?<wagerNo>\d+)(\|)|)(memberCode:(?<memberCode>\w+)(\|)|)(requestPath:(?<requestPath>[^ ]*))
+        Types  duration:float waliStatusCode:integer
+
+    # stackTrace
+    [PARSER]
+        Name   errorMessage
+        Format regex
+        Regex  ^RexBet\.Common\.Core\.RexBetException: (?<errorMessage>.*)
+
+  extraFiles: {}
+
+# The config volume is mounted by default, either to the existingConfigMap value, or the default of "fluent-bit.fullname"
+volumeMounts:
+  - name: config
+    mountPath: /fluent-bit/etc/fluent-bit.conf
+    subPath: fluent-bit.conf
+  - name: config
+    mountPath: /fluent-bit/etc/custom_parsers.conf
+    subPath: custom_parsers.conf
+
+logLevel: info
+
+# rexbet customer
+fluentbitClient:
+    env: dev
+    module: all
+    path: /tmp/fluentd/**/**/All-*.log
+    db: /tmp/fluentd/pos/all.db
+
+fluentdServer:
+    externalName: fluentd-server.monitor.svc.cluster.local

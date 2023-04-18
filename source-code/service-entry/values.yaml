@@ -1,0 +1,11 @@
+serviceEntries:
+- name: odds-proxy-hosts
+  hosts:
+  - odds-stream-test.betconstruct.com
+  ports:
+  - portName: http-tunnel
+    protocol: HTTP
+    port: 8069
+  location: MESH_INTERNAL
+  resolution: STATIC
+  externalIp: 192.168.1.150

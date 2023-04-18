@@ -1,0 +1,23 @@
+{{- $moduleName := .Values.deployment.name -}}
+{{- $serviceType := .Values.service.serviceType -}}
+{{- $containerPort := .Values.service.containerPort -}}
+{{- $nodePort := .Values.service.nodePort -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $moduleName }}
+spec:
+  type: {{ $serviceType }}
+  selector:
+    app: {{ $moduleName }}
+  ports:  
+  - name: http
+    protocol: TCP
+    port: {{ $containerPort }}
+    targetPort: {{ $containerPort }}
+    {{- if eq $serviceType "NodePort" }}
+    nodePort: {{ $nodePort }}
+    {{- else }}
+    nodePort: null
+    {{- end}}

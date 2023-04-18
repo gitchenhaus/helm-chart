@@ -1,0 +1,42 @@
+base:
+  enabled: false
+istiod:
+  enabled: false
+  meshConfig:
+    defaultConfig:
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+        # optional
+        ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+gateway:
+  name: istio-ingressgateway
+  service:
+    type: ClusterIP
+    annotations:
+      cloud.google.com/backend-config: '{"default": "ingress-backendconfig"}'
+      cloud.google.com/app-protocols: '{"https":"HTTPS","http2":"HTTP"}'
+      cloud.google.com/neg: '{"ingress": true}'
+  labels:
+    istio: ingressgateway
+  autoscaling:
+    enabled: true
+    minReplicas: 6
+    maxReplicas: 10
+
+
+coreNamespace: sport-betting
+
+coreGateway:
+  name: sport-betting-gateway
+
+enableGCLB: true
+## Below setting on "enableGCLB : true" 
+
+backendconfig:
+  name: ingress-backendconfig
+
+ingress:
+  name: gke-ingress
+  staticIPName: lb-ssl-gke
+  preSharedCert: ssl-cert
+

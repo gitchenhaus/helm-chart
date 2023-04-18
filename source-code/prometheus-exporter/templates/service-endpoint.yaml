@@ -1,0 +1,45 @@
+
+{{- $namespace := .Values.exporter.namespace -}}
+
+{{- $serviceInfos := .Values.exporter.services -}}
+################################
+
+{{- range $serverName,$serviceInfo :=$serviceInfos}}
+
+{{- range $addrInfo :=$serviceInfo }}
+
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{$addrInfo.name}}
+    namespace: {{$namespace}}
+    labels:
+      provider: rexbet
+  {{- if $addrInfo.annotations }}
+    annotations:
+      info: {{printf "%s(%s)" $addrInfo.annotations.info $addrInfo.ip}}
+  {{- end }}
+spec:
+  ports:  
+  - name: metrics
+    port: {{$addrInfo.port}}
+    targetPort: {{$addrInfo.port}}
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+    name: {{$addrInfo.name}}
+    namespace: {{$namespace}}
+    labels:
+      provider: rexbet
+subsets:
+ - addresses:
+    - ip: {{$addrInfo.ip}}
+   ports:
+     - name: metrics
+       port:  {{$addrInfo.port}}
+--- 
+
+{{- end}}
+
+{{- end}}

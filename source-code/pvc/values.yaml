@@ -1,0 +1,7 @@
+pvcs:
+- name: dev-pv-claim
+  storageClassName: ""
+  accessMode: ReadWriteMany
+  diskSize: 30Gi
+  nfsIP: 10.128.0.11
+  nfsPath: "/var/nfs_share_dir"

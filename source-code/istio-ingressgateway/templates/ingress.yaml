@@ -1,0 +1,17 @@
+{{- if .Values.enableGCLB }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: {{ .Values.ingress.name }}
+    namespace: istio-system
+    annotations:
+        kubernetes.io/ingress.allow-http: "false"
+        kubernetes.io/ingress.global-static-ip-name: {{ .Values.ingress.staticIPName }}
+        ingress.gcp.kubernetes.io/pre-shared-cert: {{ .Values.ingress.preSharedCert }}
+spec:
+    defaultBackend:
+        service:
+            name: {{ .Values.gateway.name }}
+            port:
+                number: 80
+{{- end }}

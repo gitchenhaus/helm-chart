@@ -1,0 +1,158 @@
+externalInstances:
+- name: kafka-external-instance
+  namespace: kafka
+  ports:
+  - portName: tcp-kafka
+    port: 9092
+    targetPorts: 
+    - 9092
+  - portName: tcp-zookeeper
+    port: 2181
+    targetPorts:
+    - 2181
+  externalIps:
+  - 10.65.23.4
+  - 10.65.23.3
+  - 10.65.23.7
+
+- name: mariadb-external-instance
+  namespace: mariadb
+  ports:
+  - portName: mysql-mariadb
+    port: 3306
+    targetPorts: 
+    - 3306
+  externalIps:
+  - 10.65.23.29
+
+- name: mongodb-external-instance
+  namespace: mongodb
+  ports:
+  - portName: mongo-mongo
+    port: 27017
+    targetPorts:
+    - 27017
+    - 27027
+    - 27037
+  externalIps:
+  - 10.65.23.18
+
+- name: global-redis-master-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6380
+  externalIps:
+  - 10.65.23.12
+- name: global-redis-slave-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts: 
+    - 6380
+  externalIps:
+  - 10.65.23.10
+- name: reporting-redis-master-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6380
+  externalIps:
+  - 10.65.23.10
+- name: reporting-redis-slave-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6382
+  externalIps:
+    - 10.65.23.12
+- name: gaming-redis-master-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6379
+  externalIps:
+  - 10.65.23.12
+- name: gaming-redis-slave-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6381
+  externalIps:
+  - 10.65.23.10
+- name: gameaggregator-redis-master-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6389
+  externalIps:
+  - 10.65.23.12
+- name: gameaggregator-redis-slave-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6391
+  externalIps:
+  - 10.65.23.10
+- name: placebet-redis-master-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6379
+  externalIps:
+  - 10.65.23.10
+- name: placebet-redis-slave-instance
+  namespace: redis
+  ports:
+  - portName: redis
+    port: 6379
+    targetPorts:
+    - 6381
+  externalIps:
+  - 10.65.23.12
+  
+- name: influxdb-external-instance
+  namespace: influxdb
+  ports:
+  - portName: tcp-api
+    port: 8086
+    targetPorts:
+    - 8086
+  externalIps:
+  - 10.65.23.15
+
+- name: maintenance-ui
+  namespace: sport-betting
+  ports:
+  - portName: tcp-api
+    port: 80
+    targetPorts:
+    - 8000
+  externalIps:
+  - 43.229.30.15
+- name: maintenance-api
+  namespace: sport-betting
+  ports:
+  - portName: tcp-api
+    port: 80
+    targetPorts:
+    - 8001
+  externalIps:
+  - 43.229.30.15

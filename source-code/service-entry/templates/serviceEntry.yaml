@@ -1,0 +1,42 @@
+{{- $serviceEntries := .Values.serviceEntries -}}
+################################
+{{- range $serviceEntry :=$serviceEntries}}
+
+{{- $hosts := $serviceEntry.hosts -}}
+{{- $addresses := $serviceEntry.addresses -}}
+{{- $name := $serviceEntry.name -}}
+{{- $location := $serviceEntry.location -}}
+{{- $resolution := $serviceEntry.resolution -}}
+{{- $ports := $serviceEntry.ports -}}
+{{- $externalIp := $serviceEntry.externalIp -}}
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name:  {{ $name }}
+spec:
+  hosts:
+    {{- range $host :=$hosts}}
+      - {{ $host | quote}}
+    {{- end}}
+{{- if $addresses }}
+  addresses:
+    {{- range $address :=$addresses}}
+      - {{ $address | quote}}
+    {{- end}}
+{{- end}}
+  ports:
+  {{- range $port :=$ports}}
+  - number: {{ $port.port }}
+    name: {{ $port.portName }}
+    protocol: {{ $port.protocol }}
+  {{- end}}
+  location: {{ $location }}
+  resolution: {{ $resolution }}
+  {{- if $externalIp }}
+  endpoints:
+  - address: {{ $externalIp }}
+  {{- end}}
+---
+{{- end}}

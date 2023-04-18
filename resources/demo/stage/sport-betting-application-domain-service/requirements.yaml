@@ -1,0 +1,21 @@
+dependencies:
+  - name: domain-service-account-application
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-betting-application
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-gaming-application 
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-infrastructure-application
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-reporting-application
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: domain-service-trading-application
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+
+

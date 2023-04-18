@@ -1,0 +1,91 @@
+{{- $moduleName := .Values.deployment.name -}}
+{{- $originalDomains := .Values.istio.originalDomain -}}
+{{- $maintenanceAllowDomains := .Values.istio.maintenanceAllowDomain -}}
+{{- $allowHeaders := .Values.istio.allowHeaders -}}
+{{- $gatewayName := .Values.istio.gateway -}}
+{{- $containerPort := .Values.service.containerPort -}}
+{{- $loadbalancerMode := .Values.istio.loadbalancerMode -}}
+{{- $originalHost := .Values.istio.originalHost -}}
+{{- $maintenanceAllowHost := .Values.istio.maintenanceAllowHost -}}
+{{- $istioEnable := .Values.istio.enable -}}
+
+{{- if $istioEnable }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ $moduleName }}
+spec:
+  hosts:
+{{ if $originalDomains }}
+  {{- range $domain := $originalDomains }}
+    - {{$domain}}
+  {{- end}}
+{{ else }}
+  - {{ $moduleName }}
+{{- end}}
+{{- with .Values.istio.gateway }}
+  gateways:
+  - {{ $gatewayName }}
+ {{- end}} 
+  http:
+  - headers:
+      response:
+        set:
+          X-Robots-Tag: noindex
+    route:
+    - destination:
+        port:
+          number: {{ $containerPort }}
+        host: {{ $originalHost | default  $moduleName  }}
+{{- if $allowHeaders }}
+    corsPolicy:
+      allowHeaders:
+{{- range $header := $allowHeaders }}
+      - {{$header}}
+{{- end}}
+{{- end}}
+
+{{- with .Values.istio.maintenanceAllowDomain }}
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ $moduleName }}-maintenance-allow
+spec:
+  hosts:
+{{- range $domain := $maintenanceAllowDomains }}
+  - {{$domain}}
+{{- end}}
+  gateways:
+  - {{ $gatewayName }}
+  http:
+  - headers:
+      response:
+        set:
+          X-Robots-Tag: noindex
+    route:
+    - destination:
+        port:
+          number: {{ $containerPort }}
+        host: {{ $maintenanceAllowHost }}
+{{- if $allowHeaders }}
+    corsPolicy:
+      allowHeaders:
+{{- range $header := $allowHeaders }}
+      - {{$header}}
+{{- end}}
+{{- end}}
+{{- end}}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ $moduleName }}
+spec:
+  host: {{ $moduleName }}
+  trafficPolicy:
+    loadBalancer:
+      simple: {{ $loadbalancerMode }}
+{{- end}}

@@ -1,0 +1,12 @@
+dependencies:
+  - name: application-backoffice
+    version: 0.1.2
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: application-partner-api 
+    version: 0.1.4
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+  - name: application-fake-thirdparty
+    version: 0.1.0
+    repository: http://team.sb.rexbet.com:8081/repository/helm-hosted/
+
+

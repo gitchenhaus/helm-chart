@@ -1,0 +1,121 @@
+{{- $moduleName := .Values.deployment.name -}}
+{{- $kernels := .Values.deployment.kernel -}}
+{{- $envs := .Values.deployment.envs -}}
+{{- $logPathName := .Values.deployment.logPathName -}}
+{{- $mountPath := .Values.deployment.mountPath -}}
+{{- $volumeName := .Values.deployment.volumeName -}}
+
+{{- $healthCheckEnable := .Values.deployment.healthCheckEnable -}}
+{{- $persistentEnable := .Values.deployment.persistentEnable -}}
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $moduleName }}
+spec:
+  replicas: {{.Values.deployment.replicaCount}}
+  selector:
+    matchLabels:
+      app: {{ $moduleName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $moduleName }}
+      annotations: 
+        deploy/timestamp: {{ now | toString | regexFind "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d+" | quote }}
+    spec:
+      {{- if kindIs "map" .Values.deployment.hostAliases}}
+      hostAliases:
+      - ip: {{ .Values.deployment.hostAliases.ip | quote}}
+        hostnames:
+        {{- range $hostname := .Values.deployment.hostAliases.hostnames }}
+        - {{$hostname | quote}}
+        {{- end }}
+      {{- end }}
+    {{- with .Values.deployment.imagePullSecrets }}
+      imagePullSecrets:
+      {{ toYaml .| indent 2 }}
+    {{- end }}
+      containers:
+        - name: {{ $moduleName }}
+          env: 
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+        {{- range $env :=$envs }}
+          {{- range $name,$value :=$env }}
+          - name: {{$name}}
+            value: {{$value | quote }}
+          {{- end }}
+        {{- end }}
+          image: {{.Values.deployment.image.repo }}:{{.Values.deployment.image.tag }}
+          imagePullPolicy: Always
+        {{- with .Values.deployment.resource }}
+          resources:
+            requests:
+              memory: {{.requests.memory | quote}}
+              cpu: {{.requests.cpu | quote}}
+            limits:
+              memory: {{.limits.memory | quote}}
+              cpu: {{.limits.cpu | quote}}
+        {{- end}}
+          ports:
+          - containerPort: {{.Values.service.containerPort}}
+        {{- if $healthCheckEnable }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: {{ default 30 .Values.deployment.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 30 .Values.deployment.livenessProbe.periodSeconds }}
+            successThreshold: 1
+            failureThreshold: {{ default 3 .Values.deployment.livenessProbe.failureThreshold }}
+            timeoutSeconds: {{ default 1 .Values.deployment.livenessProbe.timeoutSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: {{ default 10 .Values.deployment.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 30 .Values.deployment.readinessProbe.periodSeconds }}
+            successThreshold: 1
+            failureThreshold: {{ default 3 .Values.deployment.readinessProbe.failureThreshold }}
+            timeoutSeconds: {{ default 1 .Values.deployment.readinessProbe.timeoutSeconds }}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: {{ default 10 .Values.deployment.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ default 10 .Values.deployment.startupProbe.periodSeconds }}
+            successThreshold: 1
+            failureThreshold: {{ default 60 .Values.deployment.startupProbe.failureThreshold }}
+            timeoutSeconds: {{ default 1 .Values.deployment.startupProbe.timeoutSeconds }}
+        {{- end}}          
+          stdin: true
+          tty: true
+          securityContext:
+            capabilities:
+              add:
+              - SYS_PTRACE
+      {{- if $persistentEnable }}
+          volumeMounts:
+            {{- toYaml .Values.deployment.volumeMounts | default "" | nindent 12 }} 
+      volumes:
+        {{- toYaml .Values.deployment.volumes | default "" | nindent 8 }} 
+      {{- end}}
+
+    {{- with .Values.deployment.nodeSelector }}
+      nodeSelector:
+      {{ toYaml .| indent 2 }}
+    {{- end }}
+      securityContext:
+          sysctls:
+        {{- range $kernel :=$kernels }}
+          {{- range $name,$value :=$kernel }}
+            - name: {{$name}}
+              value: {{$value | quote }}
+          {{- end }}
+        {{- end }}
